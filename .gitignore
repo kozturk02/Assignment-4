@@ -1,0 +1,11 @@
+node_modules/
+.env
+backend/.env
+frontend/dist/
+*.db
+!backend/data/supermarket.db
+*.db-journal
+*.db-wal
+*.db-shm
+tmp/
+output/
