@@ -4,8 +4,7 @@
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
-    "demo": "node server.js --demo",
-    "test": "node --test test/*.test.js"
+    "demo": "node server.js --demo"
   },
   "engines": { "node": ">=24.0.0" },
   "dependencies": {

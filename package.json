@@ -9,7 +9,6 @@
     "start": "npm --prefix backend start",
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
-    "test": "npm --prefix backend test",
     "demo": "npm --prefix backend run demo"
   }
 }

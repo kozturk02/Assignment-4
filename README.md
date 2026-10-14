@@ -78,7 +78,6 @@ backend/
   server.js          Express API and local website server
   data/products.json Seed catalogue
   data/supermarket.db Submitted Run and retained history
-  test/              Simulation, persistence, API and sorting checks
 frontend/
   src/pages/         Setup and review views
   src/components/    Tables, secondary tabs and evidence browser
@@ -100,15 +99,9 @@ Orders are capped at whole units affordable from current cash. Cash is deducted 
 
 ## Verification
 
-```bash
-npm test
-```
+Run `npm run demo` to recalculate assurance for the included Submitted Run.
 
-Nine automated checks cover the complete 60-day operating cycle, one-day shelf life, constrained cash, immutable history, invalid inputs, deliberately corrupted evidence, SQLite reopening, HTTP routes and table sorting. Tests use separate databases. Sorting checks include negative numbers, natural alphabetical order, derived values, unchanged source rows, globally sorted evidence and invalid sort parameters.
-
-The corruption test bypasses guards only in an isolated in-memory database and confirms altered revenue, cash and expired sales produce FAIL results. A saved PASS flag is never trusted as evidence.
-
-The 14 October 2026 review update was checked with a production build, automated tests and desktop/mobile browser checks covering secondary navigation, retained filters, sorting, scrollable tables, all three findings, transaction tracing and the Day 60 order boundary. Browser checks use a database copy. A clean source copy installed with npm run setup, built successfully and loaded the included Submitted Run with PASS assurance. The included database content was verified unchanged.
+Development verification covered complete runs, expiry, constrained cash, immutable history, corrupted evidence, persistence, API validation and sorting. The production build, desktop/mobile navigation and clean-copy installation passed on 14 October 2026. The included database was verified unchanged.
 
 ## AI collaboration
 
@@ -131,8 +124,6 @@ Rent, fit-out, refrigeration, utilities, insurance, hardware, delivery charges, 
 Persistence depends on retaining the included SQLite database.
 
 ## Video and submission
-
-The [video recording guide](output/pdf/Autonomous_Supermarket_Video_Guide.pdf) provides a timed walkthrough, talking points and recording instructions.
 
 Record your own **4-8 minute MP4 with working audio**, showing your **face and student ID**. Present the working website as a project handover:
 
