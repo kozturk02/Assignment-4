@@ -80,6 +80,17 @@ function findings(db, runId, totals, products, categories, comparisons, cases) {
   const perishableWriteOff = perishables.reduce((sum, product) => sum + product.writeOffCents, 0);
   const perishableMissed = perishables.reduce((sum, product) => sum + product.missedUnits, 0);
   const perishableCase = cases.find(row => row.type === 'expiry') || cases.find(row => row.type === 'sold_out');
+  const expiryBatch = perishableCase?.type === 'expiry'
+    ? db.get('SELECT * FROM batches WHERE runId=? AND id=?', runId, perishableCase.details.batchId) : null;
+  const openingExpiry = expiryBatch && expiryBatch.orderId === null;
+  const expiryProduct = products.find(product => product.productId === perishableCase?.productId);
+  const batchSold = openingExpiry ? db.get('SELECT COALESCE(SUM(quantity),0) units FROM transaction_items WHERE runId=? AND batchId=?',
+    runId, expiryBatch.id).units : 0;
+  const expiryEvidence = openingExpiry
+    ? `${perishableCase.name} opened with ${expiryBatch.initialQuantity} units and a ${expiryProduct.shelfLifeDays}-day shelf life. ` +
+      `${batchSold} units from that batch sold; ${perishableCase.details.quantity} expired on Day ${perishableCase.day}, costing ${money(perishableCase.details.writeOffCents)}.`
+    : perishableCase ? `${perishableCase.name} has an auditable ${perishableCase.type.replaceAll('_', ' ')} record on Day ${perishableCase.day}.`
+      : 'Daily product positions retain expiry and unfilled demand, including zero outcomes.';
   const share = totals.revenueCents ? leadingCategory.revenueCents / totals.revenueCents * 100 : 0;
 
   const result = [
@@ -100,9 +111,13 @@ function findings(db, runId, totals, products, categories, comparisons, cases) {
       observation: `Perishable products lost ${perishableExpiry.toLocaleString('en-AU')} units to expiry and missed ${perishableMissed.toLocaleString('en-AU')} requested units.`,
       evidence: `Perishable write-offs totalled ${money(perishableWriteOff)}. Across the whole range, ` +
         `${totals.missedUnits.toLocaleString('en-AU')} units of recorded demand were unfilled. ` +
-        (perishableCase ? `${perishableCase.name} has an auditable ${perishableCase.type.replaceAll('_', ' ')} record on Day ${perishableCase.day}.` : 'The daily product positions retain both expiry and unfilled demand, including zero outcomes.'),
-      diagnosis: 'Orders use recent requested demand and shelf-life limits. Next-day delivery cannot repair today\'s stockout; a seven-day average reacts slowly to demand changes.',
-      implication: 'Lower orders reduce expiry risk but can miss sales. More stock could improve availability while increasing waste.',
+        expiryEvidence,
+      diagnosis: openingExpiry
+        ? 'This opening batch was too large for realised demand within its shelf life. Removing expired stock protects sales integrity but cannot recover the purchase cost. Next-day replenishment also cannot repair demand missed earlier that day.'
+        : 'Orders use recent requested demand and shelf-life limits. Next-day delivery cannot repair today\'s stockout; a seven-day average reacts slowly to demand changes.',
+      implication: openingExpiry
+        ? 'Excess opening stock commits funding to units that may expire before sale. Missed demand still occurs elsewhere, so total inventory alone does not establish good availability.'
+        : 'Lower orders reduce expiry risk but can miss sales. More stock could improve availability while increasing waste.',
       recommendation: 'Review the worst affected perishables. Test smaller opening quantities and a day-of-week stock allowance in a new run; compare missed demand with write-off cost.',
       limitation: 'Fixed shelf life and fresh receipts; no substitution, markdowns, delivery delays or refrigeration data.',
       day: perishableCase?.day || 1, productId: perishableCase?.productId || perishables[0]?.productId || products[0].productId
