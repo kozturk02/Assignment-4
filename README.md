@@ -1,12 +1,10 @@
 # Autonomous Supermarket
 
-A local React, Node.js/Express and SQLite application for a fictional autonomous supermarket near Swanston Street and Melbourne Town Hall. It simulates 60 consecutive days and lets a remote manager review commercial results, daily evidence and integrity checks. The scenario is not affiliated with IGA.
+A fictional autonomous supermarket near Swanston Street and Melbourne Town Hall. The application simulates 60 days and lets a remote manager inspect commercial results, daily records and assurance. Built with React/Vite, Node.js/Express and SQLite (better-sqlite3).
 
 ## Install and run
 
-Use **Node.js 24.x and npm 11.x** (checked with Node.js 24.15.0 and npm 11.14.1). No API keys, login or environment file are needed.
-
-From the extracted project folder:
+Requires Node.js 24.x and npm 11.x. From the project folder:
 
 ```bash
 npm run setup
@@ -14,123 +12,51 @@ npm run build
 npm start
 ```
 
-Open **http://127.0.0.1:3001**. Keep the terminal running. Express serves the website and API.
+Open **http://127.0.0.1:3001** and keep the terminal running. No API keys, login or environment file are required. On Windows, use `npm.cmd` if PowerShell blocks `npm.ps1`.
 
-If Windows PowerShell blocks npm.ps1, use `npm.cmd` in place of `npm`.
+For development, run `npm run dev:backend` and `npm run dev:frontend` in separate terminals, then open **http://127.0.0.1:5173**. Ubuntu setup is also available through `bash setup_ubuntu.sh`.
 
-For development, run `npm run dev:backend` and `npm run dev:frontend` in separate terminals, then open **http://127.0.0.1:5173**. Vite forwards API requests to port 3001. Ubuntu users can use `bash setup_ubuntu.sh`, then `bash run_backend.sh` and `bash run_frontend.sh` with Node.js 24 installed.
+Optional backend variables: `PORT` (3001), `DB_PATH` (an absolute database path) and `CLIENT_ORIGIN` (allowed frontend origins). If changing the development backend port, update frontend/vite.config.js.
 
-Optional backend variables: `PORT` (default 3001), `DB_PATH` (default below; use an absolute path if overridden), and `CLIENT_ORIGIN` (allowed local frontend origins). If changing the development backend port, update the proxy in frontend/vite.config.js.
+## Stored run and inspection
 
-## Submitted Run and new simulations
-
-The included SQLite database is **backend/data/supermarket.db**. It retains the completed Submitted Run:
+The database is **backend/data/supermarket.db** and contains one completed Submitted Run:
 
 ```text
-RUN-9b7eb376-bdb7-434a-87ee-bf4f93bb698d
+RUN-280264aa-fb4f-4d74-ad0e-bf35c7227e42
 ```
 
-This run uses seed 234234 and covers 27 August to 25 October 2026. Its daily customer means are 200 on weekdays and 300 on weekends, with up to 15% variation. Opening inventory costs A$4,795.95 within the A$40,000 limit; operating cash starts separately at A$15,000. Unused inventory funding is not cash.
+On **Home**, select **View** beside Submitted Run. No new simulation is needed to inspect it.
 
-On **Home**, find the row marked **Submitted Run** and select **View**. Its reports are immediately available; no new simulation is needed.
+- **Performance:** financial totals, shoppers, categories and products.
+- **Operations:** inventory health, replenishment and Store Brain decisions.
+- **Diagnosis:** three findings with evidence, diagnoses and recommendations.
+- **Assurance:** retained records, exceptions and inventory, revenue and cash reconciliation.
+- **Daily Report:** select any Day 1-60; use Records to inspect transactions, inventory, orders and alerts.
+- **Model Declaration:** frozen assumptions, demand weights, stock rules and opening catalogue.
 
-To test another run, select **New Simulation**, choose the settings and opening quantities, then select **Run Simulation**. Quantities are saved automatically before running. Opening inventory over A$40,000 prevents the run from starting. Each completed run retains its own configuration and history.
+Secondary tabs organise each view. Tables scroll and column headings sort. Calculation sections show formulas and inputs; audit links open the relevant day or product. In Records, **View transaction** shows the requested basket, source batches, stock deductions and cash receipt.
 
-Use **Select run** in the review to switch runs. On Home, **Use as Submitted Run** selects a completed run after its assurance checks pass. It does not alter history. `npm run demo` verifies the selected run, creating a default run only when no Submitted Run exists.
+To create another run, choose **New Simulation**, adjust settings and opening quantities, then **Run Simulation**. A new run keeps existing history. **Use as Submitted Run** selects a completed run after assurance passes. Run `npm run demo` to check the selected run's assurance.
 
-## Review and required evidence
+## Architecture and model
 
-The **Review Run** workspace has six main tabs. Each contains a small set of secondary tabs; long tables scroll inside their panels. Select a table heading to sort alphabetically or numerically; select it again to reverse the order. Sorting uses underlying numbers, including currency values.
+React calls Express through fetch. database.js manages SQLite and validation; simulation.js generates customers and runs the Store Brain; reports.js derives reports; assurance.js independently checks recorded history. Express serves the built frontend and API.
 
-| Main tab | Secondary tabs and evidence |
-| --- | --- |
-| Daily Report | Overview, Cash & orders, Inventory, Store Brain, Records. One day selector covers Days 1-60; product filters focus inventory and decisions. |
-| Performance | Overview: customers, transactions, units, revenue, cost of goods sold, gross profit, write-offs, closing cash and inventory. Shoppers: daily averages, baskets, transaction value, weekday/weekend comparison and the 60-day activity chart. Categories and Products: category sales and profit, top sellers and weak sellers. |
-| Operations | Overview: all required event counts, including zero events. Category health and Product inventory: stockouts, low stock, expiry losses, slow movers, orders, spending and closing stock. Store Brain: significant conditions, actions and recorded outcomes. |
-| Diagnosis | Three findings: product mix, availability and waste, cash and viability. Each includes observation, evidence, diagnosis, business implication, recommendation and limitation. |
-| Assurance | Checks & exceptions, History, Inventory, Revenue and Operating cash. Includes 60/60 days, retained record counts, PASS/FAIL results, exceptions and reconciliations. |
-| Model Declaration | Overview, Customers & demand, Expiry, Store Brain, Catalogue. Frozen assumptions, shopping weights, expiry handling, thresholds, cash constraints, financial rules and all opening products. |
+Each run freezes its catalogue and configuration. SQLite retains customers, requests, transactions, batches, stock movements, orders, cash, alerts and daily positions. A run writes in one transaction and rolls back on failure. Completed history cannot be edited through the app; database triggers also protect it. JSON is seed/configuration data, not the primary database.
 
-Daily selection and secondary tabs survive refreshes and navigation. Whole-run results always cover all 60 days, regardless of the selected daily filter. Run ID and Submitted Run status remain visible.
+The model uses 48 products with varied prices, popularity and shelf lives. Customer volume varies by day; shopping missions influence arrival time, basket size and category demand. Requests are generated before stock checks, so missed demand is recorded.
 
-Optional **Calculation** sections show formulas and recorded inputs. Required audit links lead to the relevant day, product or records within Daily Report > Records. Records can be filtered by type, day and product. **Load more records** appends rows to the same scrollable table; evidence sorting applies to the entire matching history before records are loaded. Older evidence URLs remain supported.
+Each morning receives yesterday's orders and removes expired stock. Sales use the oldest valid batch. At closing, the Store Brain observes recent demand, identifies low stock, sold-out products, expiry and slow movers, then places affordable next-day orders. Opening stock is limited to A$40,000; operating cash starts separately at A$15,000. Unused inventory funding is not cash. No orders are placed after Day 60.
 
-For a sale, open **View transaction** to inspect its requested basket, sold batch lines, inventory deductions and cash receipt. Assurance independently checks:
+## AI collaboration and verification
 
-- Inventory: opening + received - sold - expired = closing stock; no negative stock, overselling or expired sales.
-- Revenue: daily totals equal transaction totals; run revenue equals the sum of daily revenue and sold-item values.
-- Cash: opening cash + revenue - order spending = closing cash; each order is affordable when placed.
+ChatGPT through Codex assisted with model/catalogue drafting, implementation, debugging, analysis and documentation. Reviewed corrections included a same-origin request filter that blocked the built website and reconciliation checks tested against deliberately corrupted revenue, cash and expired-sale records. The author remains responsible for understanding and validating the work.
 
-Stockouts, expiry and cash warnings may be legitimate business outcomes. Contradictions in stored history produce FAIL results.
+Development checks covered simulation constraints, persistence, integrity and sorting. The production build, desktop/mobile review and clean-copy installation passed. The included Submitted Run retains 60 days and passes recalculated assurance.
 
-## Architecture and data flow
+## Limitations and submission
 
-React calls Express through fetch. A run freezes its product catalogue and model settings, then writes customer requests, transactions, source batches, stock movements, orders, cash events, alerts and daily positions into SQLite in one transaction. Failed runs roll back. Reports are derived from the selected run's retained history; assurance replays stock and cash and compares calculations with recorded values.
+This local prototype has no authentication, real customer history, live suppliers, price elasticity, substitution, markdowns or delivery delays. Shelf lives and prices are fixed; receipts are assumed fresh. Rent, fit-out, utilities, hardware, delivery/payment fees and overheads are excluded; GST is not separately calculated. Cash growth does not establish real profitability. Real data is needed for calibration.
 
-Completed history has no edit or delete route. SQLite triggers also reject historical changes and additions to completed runs. The Submitted Run pointer can change independently. JSON seeds the opening catalogue and stores structured configuration inside SQLite; SQLite is the primary persistent store.
-
-```text
-backend/
-  database.js        Schema, validation and history protection
-  simulation.js      Customer generation, sales and Store Brain
-  reports.js         Run reports, findings and daily views
-  assurance.js       Independent reconciliation checks
-  server.js          Express API and local website server
-  data/products.json Seed catalogue
-  data/supermarket.db Submitted Run and retained history
-frontend/
-  src/pages/         Setup and review views
-  src/components/    Tables, secondary tabs and evidence browser
-  src/api.js         Fetch requests
-  src/styles.css     Interface styles
-```
-
-## Customer model and Store Brain
-
-The opening range has 48 products across eight categories, with clear pack sizes, purchase costs, prices, quantities and shelf lives. Prices and popularity are educational assumptions. Shelf life 0 means durable stock within the run.
-
-Defaults are 170 weekday and 110 weekend customers with up to 15% daily variation. Commute, lunch, top-up and convenience missions influence arrival times, basket size and category preference. Popularity varies by product. Requests are generated before checking stock, so missed demand is retained.
-
-Each morning, yesterday's orders arrive and expired batches are removed. Customers shop in arrival-hour order; sales consume the oldest valid batch first. Each completed purchase links sold items, stock deductions and a cash receipt.
-
-At the close, the Store Brain observes the last seven days of requested demand, including missed units. It detects low stock, sold-out products, approaching expiry and slow movers. Sold-out products and the lowest stock cover have replenishment priority. Target cover is limited by shelf life and the remaining simulation days; slow-mover orders are held.
-
-Orders are capped at whole units affordable from current cash. Cash is deducted when ordered; delivery arrives before customers the next day. Partial or deferred orders retain cash-constraint records. No orders are placed after Day 60. Exact rules and weights are available in Model Declaration.
-
-## Verification
-
-Run `npm run demo` to recalculate assurance for the included Submitted Run.
-
-Development verification covered complete runs, expiry, constrained cash, immutable history, corrupted evidence, persistence, API validation and sorting. The production build, desktop/mobile navigation and clean-copy installation passed on 14 October 2026. The included database was verified unchanged.
-
-## AI collaboration
-
-ChatGPT through Codex assisted with interpreting the brief, drafting the catalogue and model, implementing React and Express, debugging, reconciliation, tests and documentation. The author remains responsible for reviewing and understanding the code, assumptions and conclusions.
-
-Examples of reviewed and corrected output:
-
-- Replaced leftover AI Capsule routes, database fields and startup commands with the supermarket workflow.
-- Fixed an origin filter that blocked the production site's own module script; added an HTTP check.
-- Tested reconciliation against deliberately corrupted evidence rather than relying on a saved PASS result.
-- Corrected Windows persistence-test cleanup to close SQLite before deleting the temporary database.
-- Kept required report evidence while removing assignment numbering, reducing prose and adding secondary navigation. Evidence sorting was changed to sort the full matching history before loading records.
-
-## Limitations
-
-This is a local prototype for one remote manager without authentication or live suppliers. It has no real customer history, demand response to prices, substitution, markdowns, variable shelf life or delivery delays. Receipts are assumed fresh.
-
-Rent, fit-out, refrigeration, utilities, insurance, hardware, delivery charges, payment fees and overheads are excluded; GST is not separately calculated. Cash growth and the inventory trading result do not establish real profitability. Target stock falls near the end of the 60-day horizon. Real operating data is needed for calibration.
-
-Persistence depends on retaining the included SQLite database.
-
-## Video and submission
-
-Record your own **4-8 minute MP4 with working audio**, showing your **face and student ID**. Present the working website as a project handover:
-
-1. Introduce the store, customer model and Store Brain. Show New Simulation, opening funding and sample products.
-2. Open the Submitted Run and its Run ID. Use Model Declaration for the assumptions.
-3. Show Performance and Operations, then explain all three Diagnosis findings and recommendations.
-4. Inspect one Daily Report and a Store Brain decision. For this run, Day 45 / P25 (White bread 650 g) provides an expiry example: 12 units and A$20.40 written off. Follow its stored history and open a transaction.
-5. Show Assurance: 60/60 days, inventory, revenue and cash checks, plus exceptions. State limitations and how AI assisted.
-
-Submit one **source-code ZIP** containing the project, README, package lock files and backend/data/supermarket.db. Exclude node_modules, build folders, .git, temporary files and secrets. Submit the MP4 separately. Check the uploaded video's duration, audio and playback. Separate daily documents or another written report are not required.
+Submit a source ZIP with the README, lock files and SQLite database; exclude node_modules, build folders, .git, temporary files and secrets. Submit the 4-8 minute MP4 separately with working audio, your face and student ID. Demonstrate the website, findings, one daily audit trace, assurance and AI contribution.
